@@ -1,13 +1,12 @@
+from dataclasses import asdict
 from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
+import uuid
 
 app = FastAPI()
 
-db = [{
-    'name': '서울',
-    'timezone': 'Asia/Seoul'
-}]
+db = []
 
 class City(BaseModel):
     name: str
@@ -18,7 +17,7 @@ def root():
     return { "Hello": "Fast API !" }
 
 @app.get('/cities')
-def getCities():
+def get_cities():
     result = []
 
     print(db)
@@ -27,21 +26,26 @@ def getCities():
         print(city['name'])
         url = f"http://worldtimeapi.org/api/timezone/{city['timezone']}"
         print(url)
-        r = requests.get(url)
+        response = requests.get(url)
 
-        currentTime = r.json()['datetime']
-        result.append({
-            'name': city['name'],
-            'timezone': city['timezone'],
-            'currentTime': currentTime
-        })
+        if (response.status_code == 200):
+            currentTime = response.json()['datetime']
+            result.append({
+                'name': city['name'],
+                'timezone': city['timezone'],
+                'currentTime': currentTime
+            })
 
     return result
 
 @app.post('/cities')
-def createCities(city: City):
+def create_cities(city: City):
     db.append(city.dict())
 
     print(db)
 
     return city
+
+@app.delete('/cities/{index}')
+def delete_cities(index: int):
+    return db.pop(index)
